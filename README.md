@@ -17,4 +17,5 @@
 * Criar um [projeto](https://appwrite.io/docs/quick-starts/flutter) dentro do Appwrite e criar os usuários e arquivos, dando as permissões de leitura de um arquivo para no máximo um usuário  
 * Definir os IDs do projeto, da Url do servidor(no caso de self hosting será o IP), do banco de dados e do Bucket com os arquivos no arquivo constantes.dart
 * Alterar o AndroidManifest.xml como mostrado no site do Appwrite para usar o ID do seu projeto
+* Para self hosting e for usado um dispositvo android fisico, tanto o aparelho quanto o servidor precisam estar na mesma rede
 
