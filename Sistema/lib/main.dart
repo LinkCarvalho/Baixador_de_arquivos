@@ -28,6 +28,8 @@ class MyApp extends StatelessWidget {
         body: Center(child: CircularProgressIndicator()),
       )
           : value == AuthStatus.authenticated
+      // verifica o status do usuario, se o usuario nao se desconectou, ao entrar no aplicativo
+      // ele ja estará conectado
           ? const pagina_download()
           : const pagina_login(),
       theme: ThemeData(

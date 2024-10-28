@@ -16,6 +16,7 @@ class _LoginPageState extends State<pagina_login> {
   bool loading = false;
 
   signIn() async {
+    //tentar logar o usuario no sistema, caso não consiga exibe uma mensagem de erro
     showDialog(
         context: context,
         barrierDismissible: false,
@@ -63,7 +64,7 @@ class _LoginPageState extends State<pagina_login> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold(// interface simples com dois campos para inserir email e senha e um botao de login
       appBar: AppBar(
         title: const Text('Baixador de arquivos', style: TextStyle(color: Colors.white),),
         backgroundColor: Colors.indigo,
@@ -103,15 +104,15 @@ class _LoginPageState extends State<pagina_login> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  signIn();
-                },
-                icon: const Icon(Icons.login),
-                label: const Text("Sign in"),
+                  onPressed: () {
+                    signIn();
+                  },
+                  icon: const Icon(Icons.login),
+                  label: const Text("Sign in"),
                   style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0.0),
-                    )
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(0.0),
+                      )
                   )
               ),
             ],

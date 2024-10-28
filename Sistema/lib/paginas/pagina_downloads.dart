@@ -12,11 +12,10 @@ class pagina_download extends StatefulWidget {
 }
 
 class _PaginaDownloadState extends State<pagina_download> {
-  late Future<List<appwrite.File>> _filesFuture;
+  late Future<List<appwrite.File>> _filesFuture; // recebe todos os arquivo do servidor
   String _pesquisa = '';
-  bool _selectionMode = false;
-  List<String> _selectedFiles = [];
-
+  bool _selecao = false; //variavel de controle para alternar entre baixar um arquivo ou mais de uma vez
+  List<String> _arquivosSelecionados = []; //lista que armazena todos os arquivos selecionados para download
 
   @override
   void initState() {
@@ -25,13 +24,12 @@ class _PaginaDownloadState extends State<pagina_download> {
     _filesFuture = appwrite.getUserFiles(APPWRITE_BUCKET);
   }
 
-  String capitalize(String s) {
+  String capitalize(String s) {//função de apoio para barraPesquisa
     if (s.isEmpty) return s;
     return s[0].toUpperCase() + s.substring(1);
   }
 
-
-  barraPesquisa() {
+  barraPesquisa() { //Cria uma barra de pesquisa para pesquisar os exames pelo nome
     return TextField(
       decoration: InputDecoration(
         hintText: 'Buscar exames',
@@ -48,10 +46,10 @@ class _PaginaDownloadState extends State<pagina_download> {
     );
   }
 
-  void _toggleSelectionMode() {
+  void _selecionarArquivos() {// controla a alternancia entre baixar 1 ou mais arquivos
     setState(() {
-      _selectionMode = !_selectionMode;
-      _selectedFiles.clear();
+      _selecao = !_selecao;
+      _arquivosSelecionados.clear();
     });
   }
 
@@ -59,10 +57,11 @@ class _PaginaDownloadState extends State<pagina_download> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Página de exames', style: TextStyle(color: Colors.white)),
+        title: const Text('Página de exames',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.indigo,
         actions: [
-          IconButton(
+          IconButton(// botao que alterna as formas de download, com um menu popup para isso
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
               final authAPI appwrite = context.read<authAPI>();
@@ -70,19 +69,20 @@ class _PaginaDownloadState extends State<pagina_download> {
             },
           ),
           PopupMenuButton(
-              onSelected: (valor) async{
-                if(valor == 'Selecionar'){
-                  _toggleSelectionMode();
+              onSelected: (valor) async {
+                if (valor == 'Selecionar') {
+                  _selecionarArquivos();
                 }
               },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 'Selecionar',
-                  child: Text('Selecionar'),
-                ),
-              ];
-            }, color: Colors.white),
+              itemBuilder: (BuildContext context) {
+                return [
+                  PopupMenuItem(
+                    value: 'Selecionar',
+                    child: Text('Selecionar'),
+                  ),
+                ];
+              },
+              color: Colors.white),
         ],
       ),
       body: Column(
@@ -92,15 +92,16 @@ class _PaginaDownloadState extends State<pagina_download> {
             child: barraPesquisa(),
           ),
           Expanded(
-            child: FutureBuilder<List<appwrite.File>>( // Usando o File do Appwrite
-              future: _filesFuture,
+            child: FutureBuilder<List<appwrite.File>>(
+              future: _filesFuture, //lista todos os arquivos um abaixo do outro
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Erro: ${snapshot.error}'));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Nenhum arquivo encontrado.'));
+                  return const Center(
+                      child: Text('Nenhum arquivo encontrado.'));
                 } else {
                   final files = snapshot.data!
                       .where((file) => file.name.contains(_pesquisa))
@@ -110,35 +111,43 @@ class _PaginaDownloadState extends State<pagina_download> {
                     itemCount: files.length,
                     itemBuilder: (context, index) {
                       final file = files[index];
-                      bool isSelected = _selectedFiles.contains(file.$id);
+                      bool isSelected = _arquivosSelecionados.contains(file.$id);
                       return ListTile(
                         title: Text(file.name),
-                          leading: _selectionMode
-                              ? Checkbox(
-                            value: isSelected,
-                            onChanged: (bool? selected) {
-                              setState(() {
-                                if (selected == true) {
-                                  _selectedFiles.add(file.$id);
-                                } else {
-                                  _selectedFiles.remove(file.$id);
-                                }
-                              });
-                            },
-                          )
-                              : null,
-                        trailing: !_selectionMode
-                            ? PopupMenuButton(
-                            onSelected: (valor) async {
-                              if(valor == 'download arquivo'){
-                                final authAPI appwrite = context.read<authAPI>();
-                                await appwrite.download(APPWRITE_BUCKET, file.$id);
-                              }else if(valor == 'download metadados'){
-                                final authAPI appwrite = context.read<authAPI>();
-                                await appwrite.metadados(APPWRITE_BUCKET, file.$id);
-                                await appwrite.download(APPWRITE_BUCKET, file.$id);
+                        leading: _selecao
+                            ? Checkbox(//se estiver no modo de baixar mais de um arquivo, aparece
+                          // uma checkbox para escolher o arquivo ao lado
+                          value: isSelected,
+                          onChanged: (bool? selected) {
+                            setState(() {
+                              if (selected == true) {
+                                _arquivosSelecionados.add(file.$id);
+                              } else {
+                                _arquivosSelecionados.remove(file.$id);
                               }
-                            },
+                            });
+                          },
+                        )
+                            : null,
+                        trailing: !_selecao
+                            ? PopupMenuButton(// se estiver no modo de arquivo unico,
+                          //outro menu pop irá mostrar a opção entra baixar so o arquivo ou baixar
+                          //o arquivo e seus metadados
+                          onSelected: (valor) async {
+                            if (valor == 'download arquivo') {
+                              final authAPI appwrite =
+                              context.read<authAPI>();
+                              await appwrite.downloadArquivo(
+                                  APPWRITE_BUCKET, file.$id);
+                            } else if (valor == 'download metadados') {
+                              final authAPI appwrite =
+                              context.read<authAPI>();
+                              await appwrite.metadadoArquivo(
+                                  APPWRITE_BUCKET, file.$id);
+                              await appwrite.downloadArquivo(
+                                  APPWRITE_BUCKET, file.$id);
+                            }
+                          },
                           itemBuilder: (BuildContext context) {
                             return [
                               PopupMenuItem(
@@ -147,11 +156,13 @@ class _PaginaDownloadState extends State<pagina_download> {
                               ),
                               PopupMenuItem(
                                 value: 'download metadados',
-                                child: Text('Baixar Arquivo com Metadados'),
+                                child:
+                                Text('Baixar Arquivo com Metadados'),
                               ),
                             ];
                           },
-                          icon: Icon(Icons.download), )
+                          icon: Icon(Icons.download),
+                        )
                             : null,
                       );
                     },
@@ -160,14 +171,14 @@ class _PaginaDownloadState extends State<pagina_download> {
               },
             ),
           ),
-          if (_selectionMode)
-            Padding(
+          if (_selecao)
+            Padding( // botao para baixar multiplos arquivos
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () async {
                   final authAPI appwrite = context.read<authAPI>();
-                  for (String fileId in _selectedFiles) {
-                    await appwrite.download(APPWRITE_BUCKET, fileId);
+                  for (String fileId in _arquivosSelecionados) {
+                    await appwrite.downloadArquivo(APPWRITE_BUCKET, fileId);
                   }
                 },
                 child: const Text('Baixar selecionados'),
@@ -178,5 +189,3 @@ class _PaginaDownloadState extends State<pagina_download> {
     );
   }
 }
-
-
